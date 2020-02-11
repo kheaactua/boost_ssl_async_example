@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "ex/pch.h"
 
 #include "ex/certificate_helpers.h"
 

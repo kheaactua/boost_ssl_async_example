@@ -1,8 +1,6 @@
 #ifndef SESSION_HPP_B9PGLJ7H
 #define SESSION_HPP_B9PGLJ7H
 
-#include "pch.h"
-
 #include "Session.h"
 
 #include <boost/asio/dispatch.hpp>

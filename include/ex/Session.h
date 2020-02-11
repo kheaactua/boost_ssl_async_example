@@ -1,11 +1,13 @@
 #ifndef SESSION_H_ZG6JSI3E
 #define SESSION_H_ZG6JSI3E
 
+#include <type_traits>
+#include <memory>
+
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/utility/string_view.hpp>
-#include <type_traits>
-#include <memory>
+
 
 namespace Ex
 {

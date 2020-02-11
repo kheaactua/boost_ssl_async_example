@@ -1,6 +1,7 @@
 #ifndef THUMBPRINT_H_OLV7PBLF
 #define THUMBPRINT_H_OLV7PBLF
 
+#include <ios>
 #include <vector>
 
 namespace Ex
@@ -24,21 +25,22 @@ namespace Ex
  * because we deal with a C interface, we only know the length at runtime, so
  * we'll use the heap (vector) instead of the stack (array) and won't template
  * this on the size */
-class Thumbprint : public std::vector<char>
+class DLLEXPORT Thumbprint
 {
    public:
-       /** Copy a SHA1 from a pointer */
-        Thumbprint(Thumbprint::value_type const * const ptr, std::vector<Thumbprint::value_type>::size_type const hash_size);
+    using value_type = char;
 
-        /* Copy a SHA1 from a string */
-        Thumbprint(std::string const& thumbprint);
+    /** Copy a SHA1 from a pointer */
+    Thumbprint(Thumbprint::value_type const * const ptr, std::vector<Thumbprint::value_type>::size_type const hash_size);
 
-        Thumbprint();
+    /* Copy a SHA1 from a string */
+    Thumbprint(std::string const& thumbprint);
 
-        /*Thumbprint(Thumbprint const& b) = default;
-        Thumbprint(Thumbprint&& b) = default;*/
+    Thumbprint();
 
    private:
+     std::unique_ptr<std::vector<value_type>> data_;
+
      template<class OStream>
      friend auto operator<<(OStream& out, Thumbprint const& dt) -> OStream&;
 };

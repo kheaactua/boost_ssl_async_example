@@ -13,19 +13,31 @@ find_package(OpenSSL REQUIRED)
 file(GLOB HEADERS include/ex/*.h*)
 file(GLOB SRC ex/*.cpp)
 
-add_executable(app
-	main.cpp
-	pch.h
-	${SRC}
-	${HEADERS}
+add_library(sslex ${SRC} ${HEADERS})
+set_source_files_properties(ex/ex.cpp PROPERTIES COMPILE_FLAGS /bigobj)
+target_include_directories(sslex PUBLIC include ${Boost_INCLUDE_DIRS})
+set_property(TARGET sslex PROPERTY CXX_STANDARD 14)
+target_link_libraries(sslex
+	PUBLIC
+		${Boost_LIBRARIES}
+		OpenSSL::SSL OpenSSL::Crypto
 )
-set_source_files_properties(main.cpp ex/ex.cpp PROPERTIES COMPILE_FLAGS /bigobj)
-target_include_directories(app PUBLIC ${PROJECT_SOURCE_DIR} include ${Boost_INCLUDE_DIRS})
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+target_compile_definitions(sslex PUBLIC
+	COMPILING_DLL
+	_UNICODE UNICODE
+	# D_WIN32_WINNT=0x0A00 _WIN32_WINNT=0x0A00
+)
+target_precompile_headers(sslex PUBLIC include/ex/pch.h)
+
+
+add_executable(app main.cpp pch.h)
+set_source_files_properties(main.cpp PROPERTIES COMPILE_FLAGS /bigobj)
+target_include_directories(app PUBLIC ${PROJECT_SOURCE_DIR})
 set_property(TARGET app PROPERTY CXX_STANDARD 14)
 target_link_libraries(app
 	PRIVATE
-	${Boost_LIBRARIES}
-	OpenSSL::SSL OpenSSL::Crypto
+		sslex
 )
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 target_compile_definitions(app PUBLIC

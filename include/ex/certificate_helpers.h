@@ -11,23 +11,23 @@ namespace Ex
 {
 
 // TODO return enum
-auto get_property(
+auto DLLEXPORT get_property(
     PCCERT_CONTEXT pCertContext,
     DWORD dwPropId,
     std::function<void(void*, DWORD)> setter
 ) -> int;
 
-auto get_thumbprint(
+auto DLLEXPORT get_thumbprint(
     PCCERT_CONTEXT pCertContext,
     Ex::Thumbprint& thumbprint
 ) -> int;
 
-auto get_display_name(
+auto DLLEXPORT get_display_name(
     PCCERT_CONTEXT pCertContext,
     std::wstring& display_name
 ) -> int;
 
-auto load_certificate_from_thumbprint(
+auto DLLEXPORT load_certificate_from_thumbprint(
     Ex::Thumbprint const * const search_thumbprint,
     boost::asio::ssl::context& ctx,
     boost::system::error_code& ec,
@@ -35,9 +35,9 @@ auto load_certificate_from_thumbprint(
     std::function<void(std::wstring const&)> err
 ) -> bool;
 
-auto load_server_certificate(boost::asio::ssl::context& ctx) -> void;
+auto DLLEXPORT load_server_certificate(boost::asio::ssl::context& ctx) -> void;
 
-auto load_static_server_certificate(boost::asio::ssl::context& ctx) -> void;
+auto DLLEXPORT load_static_server_certificate(boost::asio::ssl::context& ctx) -> void;
 
 } // namespace Ex
 

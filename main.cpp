@@ -1,5 +1,13 @@
 #include "pch.h"
 
+// Prevent Windows.h from defining a 'max' macro
+#define NOMINMAX
+
+// Fix no_init_all error
+#if (_MSC_VER >= 1915)
+#define no_init_all deprecated
+#endif
+
 #include "ex/Listener.hpp"
 #include "ex/certificate_helpers.h"
 #include "ex/Thumbprint.h"
@@ -44,8 +52,7 @@ auto main(int argc, char* argv[]) -> int
     {
         namespace http = boost::beast::http;
 
-        auto status = http::status::ok;
-        http::response<http::empty_body> res{ status, version };
+        http::response<http::empty_body> res{ http::status::ok , version };
         return std::make_pair(true, res);
     };
 
@@ -55,8 +62,15 @@ auto main(int argc, char* argv[]) -> int
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12};
 
-    // This holds the self-signed certificate used by the server
-    Ex::load_server_certificate(ctx);
+    try
+    {
+        // This holds the self-signed certificate used by the server
+        Ex::load_server_certificate(ctx);
+    }
+    catch (std::exception const&)
+    {
+        std::wcerr << "Received exception loading certificate" << std::endl;
+    }
 
     // Create and launch a listening port
     auto listener = std::make_shared<ListenerHttps>(
@@ -78,9 +92,11 @@ auto main(int argc, char* argv[]) -> int
         return on_post(version, body);
     });
 
+    std::wcout << "Starting listener" << std::endl;
     listener->run();
 
     // Run the I/O service on the requested number of threads
+    std::wcout << "Launching " << threads << " listener threads\n";
     std::vector<std::thread> v;
     v.reserve(threads - 1);
     for(auto i = threads - 1; i > 0; --i)
@@ -90,6 +106,8 @@ auto main(int argc, char* argv[]) -> int
             ioc.run();
         });
     ioc.run();
+
+    std::wcout << "done\n";
 
     return EXIT_SUCCESS;
 }

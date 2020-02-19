@@ -1,12 +1,13 @@
 #ifndef SESSION_HPP_B9PGLJ7H
 #define SESSION_HPP_B9PGLJ7H
 
-#include "Session.h"
+#include "ex/Session.h"
 
 #include <boost/asio/dispatch.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 #include <memory>
@@ -25,12 +26,14 @@ Session<Stream, Context>::Session(
     boost::asio::ip::tcp::socket&& socket,
     typename std::enable_if<!details::has_member_function_cancel<S, void>::value, Context&>::type ctx,
     Types::type_on_fail const on_fail,
-    Types::type_on_post const on_post
+    Types::type_on_post const on_post,
+    int const request_timeout_seconds
 )
-   : stream_(std::move(socket), ctx)
-   , lambda_(*this)
-   , on_fail_(on_fail)
-   , on_post_(on_post)
+    : stream_(std::move(socket), ctx)
+    , lambda_(*this)
+    , on_fail_(on_fail)
+    , on_post_(on_post)
+    , request_timeout_seconds_(request_timeout_seconds)
 { }
 
 template<class Stream, class Context>
@@ -38,12 +41,14 @@ template<typename S>
 Session<Stream, Context>::Session(
     boost::asio::ip::tcp::socket&& socket,
     Types::type_on_fail const on_fail,
-    Types::type_on_post const on_post
+    Types::type_on_post const on_post,
+    int const request_timeout_seconds
 )
-   : stream_(std::move(socket))
-   , lambda_(*this)
-   , on_fail_(on_fail)
-   , on_post_(on_post)
+    : stream_(std::move(socket))
+    , lambda_(*this)
+    , on_fail_(on_fail)
+    , on_post_(on_post)
+    , request_timeout_seconds_(request_timeout_seconds)
 { }
 
 template<class Stream, class Context>
@@ -122,7 +127,7 @@ auto Session<Stream, Context>::run() -> typename std::enable_if<!details::has_me
         stream_.get_executor(),
         beast::bind_front_handler(
             &Session<Stream, Context>::on_run<Stream>,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }
@@ -141,7 +146,7 @@ auto Session<Stream, Context>::run() -> typename std::enable_if<details::has_mem
     net::dispatch(stream_.get_executor(),
         beast::bind_front_handler(
             &Session<Stream, Context>::do_read,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }
@@ -154,14 +159,14 @@ auto Session<Stream, Context>::on_run() -> typename std::enable_if<!details::has
     namespace ssl   = boost::asio::ssl;
 
     // Set the timeout.
-    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(REQUEST_TIMEOUT));
+    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(request_timeout_seconds_));
 
     // Perform the SSL handshake
     stream_.async_handshake(
         ssl::stream_base::server,
         beast::bind_front_handler(
             &Session::on_handshake,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }
@@ -191,13 +196,13 @@ auto Session<Stream, Context>::do_read() -> void
     req_ = {};
 
     // Set the timeout.
-    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(REQUEST_TIMEOUT));
+    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(request_timeout_seconds_));
 
     // Read a request
     http::async_read(stream_, buffer_, req_,
         beast::bind_front_handler(
             &Session::on_read,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }
@@ -263,13 +268,13 @@ auto Session<Stream, Context>::do_close() -> typename std::enable_if<!details::h
     namespace beast = boost::beast;
 
     // Set the timeout.
-    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(REQUEST_TIMEOUT));
+    beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(request_timeout_seconds_));
 
     // Perform the SSL shutdown
     stream_.async_shutdown(
         beast::bind_front_handler(
             &Session::on_shutdown,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }

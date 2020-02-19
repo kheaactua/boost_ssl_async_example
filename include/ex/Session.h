@@ -71,14 +71,16 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
         boost::asio::ip::tcp::socket&& socket,
         typename std::enable_if<!details::has_member_function_cancel<S, void>::value, Context&>::type ctx,
         Types::type_on_fail const on_fail,
-        Types::type_on_post const on_post
+        Types::type_on_post const on_post,
+        int const request_timeout_seconds
     );
 
     template<typename S = Stream>
     explicit Session(
         boost::asio::ip::tcp::socket&& socket,
         Types::type_on_fail const on_fail,
-        Types::type_on_post const on_post
+        Types::type_on_post const on_post,
+        int const request_timeout_seconds
     );
 
     /** Start accepting incoming SSL connections */
@@ -123,6 +125,7 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
     auto on_shutdown(boost::beast::error_code const ec) const -> void;
 
    private:
+
     /**
      * Verify that the HTTP request is proper, otherwise produce an appropriate
      * HTTP response showing the error.
@@ -148,9 +151,12 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
         Send&& send,
         RequestHandler post_handler
     ) -> bool;
+
+    /** Timeout value used on requests */
+    int request_timeout_seconds_ = 30;
 };
 
-} // namespace Ex
+} // namespace EsoType5HttpServer
 
 #endif /* end of include guard: SESSION_H_ZG6JSI3E */
 

@@ -1,8 +1,11 @@
 #ifndef LISTENER_HPP_WYKYZCJH
 #define LISTENER_HPP_WYKYZCJH
 
-#include "Listener.h"
-#include "Session.h"
+#include "ex/Listener.h"
+
+#include <boost/asio/strand.hpp>
+
+#include "ex/Session.h"
 
 namespace Ex
 {
@@ -11,11 +14,13 @@ template<class Stream, class Context>
 Listener<Stream, Context>::Listener(
     boost::asio::io_context& ioc,
     Context& ctx,
-    boost::asio::ip::tcp::endpoint const endpoint
+    boost::asio::ip::tcp::endpoint const endpoint,
+    int const request_timeout_seconds
 )
     : ioc_(ioc)
     , ctx_(ctx)
     , acceptor_(boost::asio::make_strand(ioc))
+    , request_timeout_seconds_(request_timeout_seconds)
 {
     namespace beast = boost::beast;
     namespace net   = boost::asio;
@@ -66,7 +71,7 @@ auto Listener<Stream, Context>::do_accept() -> void
         net::make_strand(ioc_),
         beast::bind_front_handler(
             &Listener<Stream, Context>::on_accept<Stream>,
-            shared_from_this()
+            this->shared_from_this()
         )
     );
 }
@@ -86,7 +91,8 @@ auto Listener<Stream, Context>::on_accept(
             std::move(socket),
             ctx_,
             on_fail_,
-            on_post_
+            on_post_,
+            request_timeout_seconds_
         )->run();
 
     // Accept another connection
@@ -107,7 +113,8 @@ auto Listener<Stream, Context>::on_accept(
         std::make_shared<Session<Stream, Context>>(
             std::move(socket),
             on_fail_,
-            on_post_
+            on_post_,
+            request_timeout_seconds_
         )->run();
 
     // Accept another connection

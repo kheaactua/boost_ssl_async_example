@@ -1,11 +1,13 @@
 #ifndef LISTENER_H_PW6QNCMF
 #define LISTENER_H_PW6QNCMF
 
+#include <memory>
+
 #include <boost/beast/core.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
 
-#include "ex.h"
+#include "ex/ex.h"
 
 
 namespace Ex
@@ -23,7 +25,8 @@ class Listener : public std::enable_shared_from_this<Listener<Stream, Context>>
     Listener(
         boost::asio::io_context& ioc,
         Context& ctx,
-        boost::asio::ip::tcp::endpoint const endpoint
+        boost::asio::ip::tcp::endpoint const endpoint,
+        int timeout_seconds
     );
 
     auto run() -> void { do_accept(); }
@@ -60,6 +63,9 @@ class Listener : public std::enable_shared_from_this<Listener<Stream, Context>>
         boost::beast::error_code const ec,
         boost::asio::ip::tcp::socket socket
     ) -> typename std::enable_if<details::has_member_function_cancel<S, void>::value, void>::type;
+
+    /** Timeout value used on requests */
+    int request_timeout_seconds_ = 30;
 };
 
 } // namespace Ex

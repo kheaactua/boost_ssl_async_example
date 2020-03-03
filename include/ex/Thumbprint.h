@@ -1,8 +1,12 @@
 #ifndef THUMBPRINT_H_OLV7PBLF
 #define THUMBPRINT_H_OLV7PBLF
 
+#include "ex_config.h"
+
 #include <ios>
 #include <vector>
+
+#include <wincrypt.h>
 
 namespace Ex
 {
@@ -28,41 +32,60 @@ namespace Ex
 class DLLEXPORT Thumbprint
 {
    public:
-    using value_type = char;
+    using value_type = BYTE;
+    using size_type = std::vector<value_type>::size_type;
 
     /** Copy a SHA1 from a pointer */
-    Thumbprint(Thumbprint::value_type const * const ptr, std::vector<Thumbprint::value_type>::size_type const hash_size);
+    Thumbprint(value_type const * const ptr, size_type const hash_size);
 
     /* Copy a SHA1 from a string */
-    Thumbprint(std::string const& thumbprint);
+    explicit Thumbprint(std::string const& thumbprint);
 
     Thumbprint();
 
-   private:
-     std::unique_ptr<std::vector<value_type>> data_;
+   ~Thumbprint();
 
-     template<class OStream>
-     friend auto operator<<(OStream& out, Thumbprint const& dt) -> OStream&;
+    auto operator=(Thumbprint const& other) -> Thumbprint&;
+    auto operator==(Thumbprint const& other) const -> bool;
+
+    auto size() const noexcept -> size_type { return impl_->size(); }
+
+    auto data() const noexcept -> const value_type* { return impl_->data(); }
+
+    auto hash_blob(CRYPT_HASH_BLOB * const blob) const -> void { impl_->hash_blob(blob); };
+
+   private:
+
+    struct ThumbprintImpl
+    {
+        /** Copy a SHA1 from a pointer */
+        ThumbprintImpl(value_type const * const ptr, size_type const hash_size);
+
+        /* Copy a SHA1 from a string */
+        explicit ThumbprintImpl(std::string const& thumbprint);
+
+        ThumbprintImpl() = default;
+
+        std::vector<value_type> bin_data;
+
+        auto size() const noexcept -> size_type { return bin_data.size(); }
+
+        auto str() const -> std::string;
+
+        auto data() const noexcept -> const value_type*;
+
+        auto hash_blob(CRYPT_HASH_BLOB * const blob) -> void;
+    };
+
+    // I can't use an std::unqiue_ptr or std::vector here, or anything std
+    // without risking dll interface issues (and warnings)
+    ThumbprintImpl* impl_ = nullptr;
+
+    friend auto operator<<(std::ostream& out,  Thumbprint const& dt) -> std::ostream&;
+    friend auto operator<<(std::wostream& out, Thumbprint const& dt) -> std::wostream&;
 };
 
-template<class OStream>
-auto operator<<(OStream& out, Thumbprint const& tp) -> OStream&
-{
-    // Think of this as printing a number one digit at a time
-    // So for the number 23,
-    // - first zero out everything but the tens, leaving us with 20,
-    // - then shift it down an order of magnitude, leaving us with 2.
-    // - Then, return to the original number, and zero out everything
-    //   except the ones, leaving us with 3
-
-    for (Thumbprint::size_type i = 0; i < tp.size(); ++i)
-        out << std::hex << ((tp[i] & 0x000000F0) >> 4) << (tp[i] & 0x000000F);
-
-    return out;
-}
-
 } // /namespace Ex
-
 
 #endif /* end of include guard: THUMBPRINT_H_OLV7PBLF */
 

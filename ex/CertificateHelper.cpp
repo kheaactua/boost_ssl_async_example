@@ -1,4 +1,4 @@
-#include "ex/pch.h"
+#include "ex/ex_config.h"
 
 #include "ex/CertificateHelper.h"
 
@@ -175,17 +175,18 @@ auto CertificateHelper::load_certificate_from_thumbprint(
         {
             certificates = { data, static_cast<std::size_t>(len) };
 
+// TODO I am only adding a CA here, I also need to add the chain and actual certificate
             // Calls SSL_CTX_get_cert_store and X509_STORE_add_cert
             ctx_.add_certificate_authority(boost::asio::buffer(certificates.data(), certificates.size()), ec);
             if (ec)
             {
                 uc::stringstream ss;
-                ss << "Couldn't load certificate authority (1): error = " << USTRING(ec.message());
+                ss << "Couldn't load certificate authority(1): Error = " << USTRING(ec.message());
                 error(ss);
             }
             else
             {
-                log(WSTR("Loading certificate authority (1)"));
+                log(WSTR("Loading certificate authority"));
             }
         }
         else
@@ -195,12 +196,12 @@ auto CertificateHelper::load_certificate_from_thumbprint(
             if (ec)
             {
                 uc::stringstream ss;
-                ss << "Couldn't load certificate authority (2): error = " << USTRING(ec.message());
+                ss << "Couldn't load certificate authority.: Error = " << USTRING(ec.message());
                 error(ss);
             }
             else
             {
-                log(WSTR("Loading certificate authority (2)"));
+                log(WSTR("Loading certificate authority."));
             }
         }
     }
@@ -238,17 +239,6 @@ auto CertificateHelper::load_server_certificate(
         ssl::context::no_sslv2            |
         ssl::context::single_dh_use
     );
-
-    // Request client certificate
-    ctx_.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
-    ctx_.set_verify_callback([this](bool const preverified, ssl::verify_context& vctx) -> bool
-    {
-        // I can't figure out a way to pass log_ into this, since even if I
-        // copy the lambda it throws access violations.  An alternative would
-        // be to define an interface, and pass a shared_ptr of the calling
-        // object and invokve log/err on it..
-        return ignore_client_certificate(preverified, vctx, [](auto const& msg) { UCOUT << msg << "\n"; });
-    });
 
     if (!load_certificate_from_thumbprint(
         store_name,
@@ -374,12 +364,6 @@ auto CertificateHelper::load_server_certificate() -> bool
         boost::asio::buffer(dh.data(), dh.size())
     );
 
-    ctx_.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
-    ctx_.set_verify_callback([this](bool const preverified, ssl::verify_context& vctx) -> bool
-    {
-        return ignore_client_certificate(preverified, vctx, [](auto const& msg) { UCOUT << msg << "\n"; });
-    });
-
     return true;
 }
 
@@ -387,14 +371,21 @@ auto CertificateHelper::log(uc::string const& mes)          -> void { log_(mes);
 auto CertificateHelper::log(uc::stringstream const& mes)    -> void { log_(mes.str()); };
 auto CertificateHelper::error(uc::stringstream const& mes)  -> void { log_(mes.str()); };
 
-auto CertificateHelper::require_client_verification(std::function<bool(bool const, ssl::verify_context&)> callback) -> void
+auto CertificateHelper::require_client_verification(
+    ssl::context& ctx,
+    unsigned char const * const session_id_context,
+    unsigned int const session_id_context_len,
+    std::function<bool(bool const, ssl::verify_context&)> callback
+) -> void
 {
     log(WSTR("Requiring SSL client verification"));
 
     ctx_.set_verify_mode(ssl::verify_peer | ssl::verify_fail_if_no_peer_cert);
     ctx_.set_verify_callback(callback);
-}
 
+    if (!SSL_CTX_set_session_id_context(ctx.native_handle(), session_id_context, session_id_context_len))
+        log(WSTR("Could not set session ID context"));
+}
 
 // https://sourceforge.net/p/asio/mailman/message/30200852/
 // set_verify_callback - the callback is called multiple times on each connection

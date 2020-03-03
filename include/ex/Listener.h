@@ -5,7 +5,6 @@
 
 #include <boost/beast/core.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <memory>
 
 #include "ex/ex.h"
 

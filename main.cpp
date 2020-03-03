@@ -8,35 +8,43 @@
 #define no_init_all deprecated
 #endif
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/ssl.hpp>
+#include <boost/config.hpp>
+
+#include <string>
+#include <algorithm>
+#include <codecvt>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include <cstdio>
+#include <conio.h>
 #include <codecvt>
 #include <sstream>
 #include <string>
 
-namespace uc {
-
-#ifdef UNICODE
-    using Char = wchar_t;
-    #define WSTR(s) L##s
-    #define UCOUT std::wcout
-    #define UCERR std::wcerr
-    #define USTRING(s) std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(s)
-#else
-    using Char = char;
-    #define WSTR(s) s
-    #define UCOUT std::cout
-    #define UCERR std::cerr
-    #define USTRING(s) s
-#endif
-
-    using string = std::basic_string<Char>;
-    using stringstream = std::basic_stringstream<Char>;
-
-}
+#include "UnicodeAdaptors/config.h"
 
 #include "ex/Listener.hpp"
-#include "ex/certificate_helpers.h"
+#include "ex/CertificateHelper.h"
 #include "ex/Thumbprint.h"
 
+
+bool running = true;
+auto WINAPI consoleHandler(DWORD signal) -> BOOL
+{
+    if (CTRL_C_EVENT == signal)
+        UCOUT << "Ctrl-C handled\n";
+
+    running = false;
+    return TRUE;
+}
 
 auto main(int argc, char* argv[]) -> int
 {
@@ -84,9 +92,8 @@ auto main(int argc, char* argv[]) -> int
     // The SSL context is required, and holds certificates
     ssl::context ctx{ ssl::context::tlsv12 };
 
-    namespace eh = EsoType5HttpServer;
-    eh::Thumbprint search_thumbprint{ "ffe1e9a5f5b558f7f84808647680fdc77844e591" };
-    eh::CertificateHelper ch{ ctx };
+    Ex::Thumbprint search_thumbprint{ "ffe1e9a5f5b558f7f84808647680fdc77844e591" };
+    Ex::CertificateHelper ch{ ctx };
     if (!ch.load_server_certificate(/* WSTR("MY"), &search_thumbprint */))
     {
         UCERR << "Could not load certificate\n";
@@ -120,16 +127,31 @@ auto main(int argc, char* argv[]) -> int
     // Run the I/O service on the requested number of threads
     UCOUT << "Launching " << threads << " listener threads\n";
     std::vector<std::thread> v;
-    v.reserve(threads - 1);
-    for(auto i = threads - 1; i > 0; --i)
-        v.emplace_back(
-        [&ioc]
-        {
-            ioc.run();
-        });
-    ioc.run();
+    v.reserve(threads);
+    for(auto i = threads; i > 0; --i)
+        v.emplace_back([&ioc] { ioc.run(); });
 
-    UCOUT << "done\n";
+    // Listen for ctrl-c
+    if (SetConsoleCtrlHandler(consoleHandler, TRUE))
+    {
+        UCOUT << "Ctrl-Handler installed\n";
+
+        UCOUT << "\nPress q to quit\n";
+        while (running)
+        {
+            auto c = _getch();
+            if ('q' == c) running = false;
+
+            UCOUT << static_cast<uc::Char>(c);
+            if (13 == c) UCOUT << "\n";
+        }
+    }
+    else
+    {
+        UCERR << "\nERROR: Could not set control handler\n";
+    }
+
+    UCOUT << "\nExiting...\n";
 
     return EXIT_SUCCESS;
 }

@@ -1,7 +1,7 @@
 #ifndef CERTIFICATE_HELPERS_H_GY7VEMA0
 #define CERTIFICATE_HELPERS_H_GY7VEMA0
 
-#include "ex/config.h"
+#include "ex/ex_config.h"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -46,7 +46,12 @@ DLLEXPORT class CertificateHelper
     auto load_server_certificate() -> bool;
 
     /** Request client certificate and specify the verification callback */
-    auto require_client_verification(std::function<bool(bool const, boost::asio::ssl::verify_context&)> callback) -> void;
+    auto require_client_verification(
+        boost::asio::ssl::context& ctx,
+        unsigned char const * const session_id_context,
+        unsigned int const session_id_context_len,
+        std::function<bool(bool const, boost::asio::ssl::verify_context&)> callback
+    ) -> void;
 
    protected:
 

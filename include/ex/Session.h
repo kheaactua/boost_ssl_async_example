@@ -1,6 +1,8 @@
 #ifndef SESSION_H_ZG6JSI3E
 #define SESSION_H_ZG6JSI3E
 
+#include "ex/ex_config.h"
+
 #include <type_traits>
 #include <memory>
 
@@ -66,6 +68,7 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
 
    public:
     // Take ownership of the stream
+    // SSL constructr
     template<typename S = Stream>
     explicit Session(
         boost::asio::ip::tcp::socket&& socket,
@@ -75,6 +78,8 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
         int const request_timeout_seconds
     );
 
+    // Take ownership of the stream
+    // Plain constructr
     template<typename S = Stream>
     explicit Session(
         boost::asio::ip::tcp::socket&& socket,
@@ -108,6 +113,8 @@ class Session : public std::enable_shared_from_this<Session<Stream, Context>>
         std::size_t const bytes_transferred
     ) -> void;
 
+    /** Write to the stream.  When the request doesn't set keep-alive, close is
+     * set to true (somehow) */
     auto on_write(
         bool const close,
         boost::beast::error_code const ec,

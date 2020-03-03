@@ -45,35 +45,19 @@ listener_->on_post([this](
 
 # Issues and Outstanding Items
 
-- Certificate is hard-coded
-- Exception on exit (pre-existing)
-- The console eventually fills up and requires the app to be restarted.
-  (pre-existing)
-- The customer has requested bi-directional certificates, perhaps
-  [http_client_sync_ssl.cpp](https://www.boost.org/doc/libs/1_72_0/libs/beast/example/http/client/sync-ssl/http_client_sync_ssl.cpp)
-  describes how to validate a client
+- Certificate is hard-coded (see [SO question](https://stackoverflow.com/q/60180688/1861346))
 
 # Code Comments
 
-The project can be thought of as two sub-projects, the first is the original
-project delivered to us for modification, and the second is the addition of the
-http(s) servers to handle type 5 requests.
-
-This original project is an old MFC project targeted at VS2012 but whose most
-recent comments were dated in 2005, and that other than the MFR specific objects
-was really C in a C++ file.
-
-The second sub-project, _i.e._ the handlers for type 5, is mostly partitioned off
-into a directory named ESOType5HttpServer.  This was built to target C++14, and
-is built using boost::beast.
-
-Code from the original project has been upgraded to modern coding standards and
-styles where the two projects interface or where changes simply had to be made.
-
-One specific note about the ESOType5HttpServer.  This sub-project is composed of
-two classes, Listener, and Session.  At first these had concrete
+One specific note about the `Listener`/`Session`.  At first these had concrete
 implementations, but when the requirement for an http server was added these two
 classes were templated in order to support both cases.  While this works, in
 hind sight it may have been better if two Session classes were created, as the
 current implementation wraps most of Session's members with `enable_if`s,
 rendering the class to almost be duplicated within it self.
+
+# Refereces
+
+- [OpenSSL Examples Wserver2.c](https://github.com/Andersbakken/openssl-examples/blob/master/wserver2.c)
+- [http_server_async_ssl.cpp](https://www.boost.org/doc/libs/1_72_0/libs/beast/example/http/server/async-ssl/http_server_async_ssl.cpp)
+- [http_server_async.cpp](https://www.boost.org/doc/libs/1_72_0/libs/beast/example/http/server/async/http_server_async.cpp)

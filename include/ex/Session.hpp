@@ -3,6 +3,8 @@
 
 #include "ex/Session.h"
 
+#include <memory>
+
 #include <boost/asio/dispatch.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/core.hpp>
@@ -10,7 +12,6 @@
 #include <boost/beast/version.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-#include <memory>
 
 namespace Ex
 {

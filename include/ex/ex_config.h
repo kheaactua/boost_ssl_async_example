@@ -1,5 +1,5 @@
-#ifndef PCH_H_OQ6N54XI
-#define PCH_H_OQ6N54XI
+#ifndef PCH_H_LTCUGZ59
+#define PCH_H_LTCUGZ59
 
 // Prevent Windows.h from defining a 'max' macro
 #define NOMINMAX
@@ -14,30 +14,38 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/dispatch.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/config.hpp>
 
-#include <string>
+#include <openssl/x509.h>
+
 #include <algorithm>
 #include <codecvt>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include <windows.h>
 #include <cstdio>
-#include <conio.h>
 #include <tchar.h>
 #include <wincrypt.h>
 #pragma comment(lib, "crypt32.lib")
 #include <cryptuiapi.h>
 
-#include "ex/Listener.hpp"
-#include "ex/CertificateHelper.h"
+/** Timeout used for the https server type 5 requests (seconds) */
+constexpr auto REQUEST_TIMEOUT = 30;
 
-#endif /* end of include guard: PCH_H_OQ6N54XI */
+#if COMPILING_DLL
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __declspec(dllimport)
+#endif
 
-//  vim: set ts=4 sw=4 tw=0 et ff=dos :
+#include "UnicodeAdaptors/config.h"
+
+#endif /* end of include guard: PCH_H_LTCUGZ59 */
